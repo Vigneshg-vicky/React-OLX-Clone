@@ -1,9 +1,50 @@
-import React from 'react';
+import React, { useState, useContext } from "react";
+import { useHistory } from "react-router-dom";
 
-import Logo from '../../olx-logo.png';
-import './Signup.css';
+import Logo from "../../olx-logo.png";
+import { FirebaseContext } from "../../store/firebaseContext";
+import "./Signup.css";
 
 export default function Signup() {
+  const history = useHistory();
+
+  const [allValues, setAllValues] = useState({
+    phone: "",
+    username: "",
+    email: "",
+    password: "",
+  });
+  const changeHandler = (e) => {
+    setAllValues({ ...allValues, [e.target.name]: e.target.value });
+  };
+
+  const { firebase } = useContext(FirebaseContext);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    firebase
+      .auth()
+      .createUserWithEmailAndPassword(allValues.email, allValues.password)
+      .then((result) => {
+        result.user
+          .updateProfile({ displayName: allValues.username })
+          .then(() => {
+            firebase
+              .firestore()
+              .collection("users")
+              .add({
+                id: result.user.uid,
+                username: allValues.username,
+                phone: allValues.phone,
+              })
+              .then(() => {
+                history.push("/login");
+              });
+          });
+      });
+    console.log(allValues);
+  };
+
   return (
     <div>
       <div className="signupParentDiv">
@@ -15,8 +56,9 @@ export default function Signup() {
             className="input"
             type="text"
             id="fname"
-            name="name"
-            defaultValue="John"
+            name="username"
+            defaultValue={allValues.username}
+            onChange={changeHandler}
           />
           <br />
           <label htmlFor="fname">Email</label>
@@ -26,7 +68,8 @@ export default function Signup() {
             type="email"
             id="fname"
             name="email"
-            defaultValue="John"
+            defaultValue={allValues.email}
+            onChange={changeHandler}
           />
           <br />
           <label htmlFor="lname">Phone</label>
@@ -36,7 +79,8 @@ export default function Signup() {
             type="number"
             id="lname"
             name="phone"
-            defaultValue="Doe"
+            defaultValue={allValues.phone}
+            onChange={changeHandler}
           />
           <br />
           <label htmlFor="lname">Password</label>
@@ -46,13 +90,14 @@ export default function Signup() {
             type="password"
             id="lname"
             name="password"
-            defaultValue="Doe"
+            defaultValue={allValues.password}
+            onChange={changeHandler}
           />
           <br />
           <br />
-          <button>Signup</button>
+          <button onClick={handleSubmit}>Signup</button>
         </form>
-        <a>Login</a>
+        <a onClick={()=>{history.push('/login')}}>Login</a>
       </div>
     </div>
   );
